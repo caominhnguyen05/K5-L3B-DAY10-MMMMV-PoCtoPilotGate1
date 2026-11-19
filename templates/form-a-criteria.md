@@ -174,8 +174,12 @@ git add config/acceptance_criteria.json config/acceptance_criteria.lock && git c
 
 | Mục | Điền |
 |---|---|
-| Đã ký lúc (giờ máy in hoặc `signed_at` trong `config/acceptance_criteria.lock`) |2026-11-19T15:50:49 |
-| Mã commit `Sign acceptance criteria` (7 ký tự đầu, `git log --oneline -1`) | 0eeafa1 |
-| Đã push lên `origin main` thành công? | có |
+| Đã ký lúc (giờ máy in hoặc `signed_at` trong `config/acceptance_criteria.lock`) | `2026-11-19T15:50:49` (hash đã ký `517b590f…`) |
+| Mã commit `Sign acceptance criteria` (7 ký tự đầu, `git log --oneline -1`) | `0eeafa1` (commit lúc 15:51:13, trước lần chạy đánh giá đầu tiên) |
+| Đã push lên `origin main` thành công? | **có** |
+
+*Ghi chú:* bản tiêu chí được ký trên máy Windows khi file đang ở dạng CRLF, nên hash trong `.lock` là hash của bản CRLF.
+Bàn thêm `.gitattributes` (`config/acceptance_criteria.json text eol=crlf`) để mọi máy checkout đúng các byte đã ký; nội dung file
+tiêu chí **không đổi** sau commit ký (`python3 -m lab10.criteria verify` → `"ok": true`).
 
 Sau bước này **không sửa** `config/acceptance_criteria.json`, kể cả mở rồi lưu lại bằng trình soạn thảo tự định dạng.
