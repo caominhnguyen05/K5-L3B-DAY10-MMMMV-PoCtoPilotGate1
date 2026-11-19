@@ -5,7 +5,7 @@
 - Tên nhóm (`TenNhom`, không dấu, không khoảng trắng): MMMMV
 - Lớp: `L3B`
 - Repo của bàn: https://github.com/caominhnguyen05/K5-L3B-DAY10-MMMMV-PoCtoPilotGate1
-- Thẻ sự cố đã bốc (S1–S8):
+- Thẻ sự cố đã bốc (S1–S8): S5
 
 ## Thành viên
 
@@ -49,3 +49,29 @@ Vai **Vận hành và pháp lý**. Phụ trách: câu 1.2 và câu 1.4 (cột te
 
 - **Học được:** "có người duyệt" không phải một biện pháp; phải có số — λ ca/giờ so với μ = số người × 6 ca/giờ — và phải có ngưỡng gọi thêm người, người bấm công tắc, thời hạn dừng. Không có ba thứ đó thì hàng chờ ùn mà không ai chịu trách nhiệm.
 - **Còn chưa chắc:** nếu chính `delay_cause` trong tracking bị nhập sai thì mọi cổng phía sau đều "đúng" trên dữ liệu sai. Chưa biết cần bao nhiêu mẫu đối chiếu với sao kê hãng mỗi tuần để phát hiện loại sai này.
+
+## TaoQuangVinh-2A202604081
+
+### Phần việc phụ trách
+
+Vai **Sản phẩm và kinh doanh**. Phụ trách: câu 1.1, 1.5 (cùng bàn) và 1.6 ở Phiếu A (A1, A3, A4) cùng bảng ngưỡng của Bản tiêu chí · câu 2.3 bản đồ dữ liệu và ví dụ drift (B3) · lăng kính kinh doanh của pre-mortem (B6) · câu 2.9 cổng `business` trong `config/operating_gates.json` (B7.4) · checklist B5 dòng 2 (Dữ liệu) và dòng 6 (Chi phí) · vòng 2 (thẻ S5): câu 3.2 specification (C5), quy mô cắt phạm vi ở C7 dòng [3], risk register kinh doanh (C10), quyết định v2 và ba dòng bắt buộc (C12, `submission/submission.json`).
+
+### Đóng góp cụ thể
+
+- **Bản tiêu chí** (ký ở commit `0eeafa1`, hash `517b590f`): soạn ngưỡng và lý do cho từng ngưỡng, không chép file example: pass_rate ≥ 0,97 (tối đa ~0,5 lần sai/ngày trên 22 ticket), pass_k ≥ 0,95 (tối đa 1/22 ticket chập chờn), ba chỉ số an toàn = 0, escalation_rate ≤ 0,25, chi phí ≤ 7.000đ/ticket (tiết kiệm ≥ 30% so với làm tay 10.000đ), ROI ≥ 0,4 (suy ra từ 7.000đ), 0 ca ùn (SLA 60 phút); `stop_condition` và 4 dòng `decision_rule`; 6 câu "Nếu … thì chúng tôi sẽ …", ranh giới đầu ra, bốn câu soát (Phiếu A, A4).
+- **Cổng `business`**: trần hoàn tự động 1.000.000đ/ngày (50% ngân sách Finance), ngân sách LLM 1.500đ/ticket (= `ops_limits`), phạm vi `all` ở vòng 1, `roi_min` 0,4; mỗi số có `_ly_do`. Kiểm trên bộ nền: không ca mới hỏng, 4.457đ/ticket, ROI 1,2.
+- **Bản đồ dữ liệu (B3)**: tách nguồn sự thật (`delivered_date`, `delay_cause`) với bản sao (`refund_status` do batch đêm, `index_active`); ví dụ drift REFUND-v4 ngày 01/12/2026 (concept drift: trễ 2 ngày đổi từ không hoàn sang được hoàn).
+- **Vòng 2 (S5)**: viết specification 3.2 (tổng hoàn mỗi đơn ≤ quyền lợi tính từ DB, kể cả hoàn tay; không kho nào > làm tay); tính quy mô thu hẹp (bỏ `HCM-B2B`: 12/30 ticket/ngày về làm tay, độ phủ 0,6, giữ 1 người trực); risk register dòng chi phí theo kho với `warehouse_cost_vs_manual`; quyết định v2 = **Thu hẹp** (giữ so với v1 nhưng đổi căn cứ sang một kho thật).
+- **Sửa lỗi hồ sơ**: phát hiện file tiêu chí được ký ở dạng CRLF (hash trong `.lock` khác bản LF mà GitHub lưu), thêm `.gitattributes` (`eol=crlf` cho file tiêu chí, `-text` cho file bị kiểm hash) để `criteria` và `integrity` ✅ trên mọi máy mà không sửa nội dung đã ký; phát hiện bản merge trộn hai lần `lab10.checkpoint` và làm rỗng `guards_round1.py`, khôi phục bộ chốt nhất quán `639236c2` (khớp B8) sau khi thử cả hai bộ trên bộ nền (kết quả như nhau).
+- **Có dùng trợ lý AI (Claude)** để đọc code tính chi phí/ROI (`lab10/ops.py`), soạn nháp câu chữ phiếu, đối chiếu số với `data/world.json` và report, và dò lỗi CRLF/bản chốt; các ngưỡng và quyết định do bàn chốt.
+
+### Bằng chứng
+
+- Tiêu chí: `config/acceptance_criteria.json` + `.lock` (commit `0eeafa1`; `python3 -m lab10.criteria verify` → `"ok": true`).
+- Mã lần chạy: base `R-base-before-20261119-164227-b1cf93` · cổng business `R-base-after-20261119-164247-f8a050` · tự kiểm tra cuối `R-S5-grade-20261119-172442-d6863e` (base `R-S5-before-…-d6863e`, prepared `R-S5-prepared-…-d6863e`, after `R-S5-after-…-d6863e`): `PASS-VISIBLE`, integrity/criteria/visible/regression/monitor ✅.
+- Phiếu: `templates/form-a-criteria.md` (A1, A3, A4, A5), `templates/form-b-evaluation-gates.md` (B3, B5 dòng 2 và 6, B6 lăng kính kinh doanh, B7.4), `templates/form-c-incident.md` (C0 dòng 5, C1 cập nhật, C5, C7 dòng [3], C10, C12); `submission/submission.json` (quyết định, ba dòng bắt buộc).
+
+### Exit ticket
+
+- **Học được:** một con số trung bình đẹp có thể giấu một phân khúc lỗ. Trung bình thẻ S5 chỉ 6.083đ/ticket (dưới làm tay), nhưng riêng kho sỉ là 11.326đ/ticket, và chính kho đó kéo ROI xuống âm. Ngưỡng kinh doanh phải đọc theo kho và hãng, và "Thu hẹp" là một quyết định có giá trị khi nó nói rõ cắt phần nào, còn bao nhiêu, ticket bị cắt đi đâu.
+- **Còn chưa chắc:** ngưỡng 7.000đ/ticket và ROI 0,4 đặt cho lượng 22 ticket/ngày với 1 người trực; khi REFUND-v4 hạ hạn mức tự động xuống 100.000đ thì tỉ lệ chuyển người ở kho đơn lẻ sẽ tăng bao nhiêu, và kho nào sẽ chạm 7.000đ trước, mock hiện chưa đo được.

@@ -6,12 +6,12 @@
     "TaoQuangVinh-2A202604081",
     "NguyenVanMinh-2A202604117"
   ],
-  "incident": "",
-  "decision_v1": "",
-  "decision_v2": "",
+  "incident": "S5",
+  "decision_v1": "Thu hẹp",
+  "decision_v2": "Thu hẹp",
   "three_lines": {
-    "environment_assumption": "",
-    "reduce_or_prevent": "",
-    "measure_in_pilot": ""
+    "environment_assumption": "Chúng tôi giả định mọi khoản hoàn cho một đơn, kể cả khoản CSKH hoàn tay qua điện thoại, được ghi vào cùng một sổ cái ngay lúc hoàn; ở thẻ S5 khi giả định này sai (cờ refund_status chỉ cập nhật bằng batch đêm, có 2 khoản hoàn tay T-CSKH-2520 và T-CSKH-2521) trợ lý đã hoàn trùng 890.000đ/ngày và ghi 20 lỗi oan cho hãng.",
+    "reduce_or_prevent": "Cổng sổ cái trong write_gate NGĂN hoàn trùng với mọi khoản đã vào sổ (hoàn sai 890.000đ → 0, lỗi hãng oan 20 → 0 ở R-S5-after-20261119-172442-d6863e) vì nó đọc sổ cái chứ không đọc lời khách, nhưng chỉ GIẢM khả năng với khoản hoàn tay chưa kịp ghi sổ; còn việc bỏ kho HCM-B2B (11.326đ/ticket > 10.000đ làm tay) chỉ ngăn lỗ trong pilot chứ không sửa gốc, vì đơn sỉ vẫn cần người duyệt.",
+    "measure_in_pilot": "Đo lại chi phí mỗi ticket theo từng kho và tỉ lệ chuyển người trên lượng ticket thật trong 2 tuần đầu (mock: 18 ticket/ngày trong phạm vi, 2.471đ/ticket, ROI 3,05, độ phủ 0,6), độ trễ thật giữa lúc CSKH hoàn tay và lúc khoản đó vào sổ cái, và thời gian duyệt thật của NV-HANH so với giả định 10 phút/ca, đặc biệt sau khi REFUND-v4 có hiệu lực ngày 01/12/2026."
   }
 }
