@@ -1,0 +1,51 @@
+{
+  "_huong_dan": "Cổng kinh doanh, vận hành, pháp lý mà trợ lý PHẢI tuân theo. Bàn điền ở vòng 1, chốt bằng python3 -m lab10.checkpoint, rồi được sửa tiếp ở vòng 2. null = chưa đặt cổng này. Giải thích từng dòng: docs/guide.md, mục Cổng trong config (#ban-do).",
+  "_phan_cong": "business = Sản phẩm và kinh doanh (Tào Quang Vinh) · operations + legal = Vận hành và pháp lý (Nguyễn Văn Minh) · mọi con số dưới đây có _ly_do lấy từ data/world.json → ops_limits, ops_facts, staff, staff_behavior.",
+  "business": {
+    "_ly_do_cap": "1.000.000đ = 50% ngân sách Finance (ops_limits.daily_auto_refund_budget_vnd = 2.000.000đ). Bộ nền hoàn tự động 155.000đ/ngày (R-base-before-20261119-164227-b1cf93), ngày cao điểm x3 khoảng 465.000đ vẫn dư hơn 2 lần; nửa ngân sách còn lại để CSKH hoàn tay và các khoản có phê duyệt. Khoản làm vượt trần chuyển người duyệt (giới hạn thiệt hại).",
+    "daily_refund_cap_vnd": 1000000,
+    "_ly_do_budget": "1.500đ = ops_limits.max_llm_cost_per_ticket_vnd, trần đã thống nhất với Finance. Ticket đắt nhất của bộ nền chỉ tốn 670đ tiền LLM nên không làm hỏng ca đúng; ticket dài bất thường (chữ cài cắm, ghi chú lúc đặt hàng rất dài) bị chuyển người đọc.",
+    "cost_budget_per_ticket_vnd": 1500,
+    "_ly_do_scope": "Vòng 1 để all (100%): đo đủ 4 kho trước khi biết sự cố. Bộ nền: mọi kho đều rẻ hơn làm tay (HN 1.993đ, HCM 2.571đ, DN 4.586đ, CT 590đ/ticket). Thu hẹp theo kho là đòn bẩy ở vòng 2 nếu một kho vượt trần.",
+    "_ly_do_scope_v2": "VÒNG 2 · thẻ S5: kho sỉ HCM-B2B có đơn từ 2 triệu, luôn vượt auto_limit_vnd (200.000đ) nên ticket nào cũng bị chuyển người sau khi trợ lý đã đọc: mỗi ticket tốn tiền máy + 10.000đ công duyệt = 10.747đ > 10.000đ làm tay (R-S5-after-20261119-164753-6c74bd). Tự động hoá nhóm này không thể có lời nên để kho sỉ ở quy trình làm tay (NV-HANH điều phối) và chạy pilot ở 4 kho đơn lẻ HN, HCM, DN, CT (độ phủ 18/30 ticket/ngày = 0,6). Xem lại khi có hạn mức duyệt riêng cho đơn sỉ.",
+    "pilot_scope": {"mode": "warehouse", "warehouses": ["HN", "HCM", "DN", "CT"], "percent": 100},
+    "_ly_do_roi": "0.4 = đúng roi_min đã ký trong config/acceptance_criteria.json (tương đương chi phí 7.000đ/ticket, tiết kiệm 30% so với làm tay 10.000đ). Không chặn gì, chỉ để report báo vượt trần.",
+    "roi_min": 0.4
+  },
+  "operations": {
+    "_ly_do_pic": "NV-TUNG = Lê Thanh Tùng, Giám sát vận hành, người đang giữ công tắc tắt trợ lý (data/world.json → staff). PIC phải là người có quyền tắt, không phải người viết code.",
+    "pic": "NV-TUNG",
+    "_ly_do_approver_id": "NV-HANH = Trần Thị Hạnh, Trưởng ca CSKH, người duyệt hoàn tiền vượt hạn mức. staff_behavior.trust_conditions.approver_id = NV-HANH: nhân viên chỉ tin lại khi đúng người này đứng tên duyệt.",
+    "approver_id": "NV-HANH",
+    "_ly_do_reviewers": "1 người trực: ops_facts.review_capacity_per_reviewer_per_hour = 6 ca/giờ; bộ nền 22 ticket/ngày × escalation_rate 0.2273 ≈ 5 ca/ngày + 10% kiểm mẫu ≈ 2 ca nữa, tức ~5.8 ca/ngày so với 6 ca/giờ ⇒ 1 người dư sức. Mỗi người trực thêm tốn reviewer_standby_fee_vnd = 30.000đ/ca, nên không xếp thừa (README luật 5).",
+    "reviewers_on_shift": 1,
+    "_ly_do_capacity": "6 = đúng năng lực thật của 1 người (10 phút/ca, ops_facts.review_capacity_per_reviewer_per_hour). Không cam kết cao hơn sức thật; mô phỏng lấy min(cam kết, số người × 6).",
+    "review_capacity_per_hour": 6,
+    "_ly_do_max_wait": "60 = ops_limits.review_sla_minutes: ticket chuyển cho người phải được nhận xử lý trong 60 phút. Đây là hạn đã thống nhất với Ops, không phải số bàn tự nghĩ.",
+    "max_queue_wait_minutes": 60,
+    "stop_conditions": [
+      "Có 1 khoản hoàn oan hoặc 1 lỗi ghi oan cho hãng ⇒ tắt ngay thao tác ghi tương ứng trong config/switches.json (issue_refund hoặc file_carrier_fault), giữ nguyên phần còn lại.",
+      "Có 1 thông báo cho hãng chứa dữ liệu cá nhân (tên, số điện thoại, địa chỉ người nhận) ⇒ tắt notify_carrier, báo ngay trong 15 phút.",
+      "Hàng chờ có ca chờ quá 60 phút hoặc từ 3 ca bị ùn trong một ca trực ⇒ gọi thêm 1 người duyệt; sau 30 phút vẫn ùn thì thu hẹp business.pilot_scope về kho HN.",
+      "ROI dưới 0.2 hoặc chi phí mỗi ticket vượt 10.000đ (làm tay) trong 2 ngày liên tiếp ⇒ dừng pilot, ghi bài học."
+    ],
+    "_ly_do_alert": "Kênh có người thật trực: Zalo nhóm Ops-Oncall. Tín hiệu đỏ phải tới được NV-TUNG (người bấm công tắc) và NV-OANH (người đối soát với hãng) trong cùng một phút.",
+    "alert_channel": "Zalo nhóm Ops-Oncall LogiX-VN (NV-TUNG, NV-OANH, NV-HANH)",
+    "_ly_do_decision_note": "true: staff_behavior.trust_conditions.decision_note = true — thiếu ghi chú giải thích thì nhân viên kiểm lại 100% quyết định tự động (recheck_auto_decisions_pct) và mất niềm tin. Có ghi chú: 1 lần kiểm lại chỉ tốn 0.4 ca thay vì 1.0 (ops_facts.recheck_with_note_units), giá 100đ/ticket (llm_cost.decision_note_vnd).",
+    "decision_note": true,
+    "_ly_do_sampling": "10 = staff_behavior.trust_conditions.min_sampling_pct: mức tối thiểu hai bên đã thống nhất. Dưới 10% thì nhân viên không chuyển sang kiểm mẫu mà kiểm tay toàn bộ. Kiểm mẫu là để chấp nhận/từ chối cả lô quyết định (NIST/SEMATECH acceptance sampling), không phải kiểm cho có.",
+    "review_sampling_pct": 10
+  },
+  "legal": {
+    "_ly_do_pii": "Trường bị chặn trước khi gửi hãng: recipient_contact (agent tự thêm khi đơn là quà tặng — xem agent.py nhánh order.is_gift), tên/SĐT/địa chỉ người nhận, và customer_note (chữ khách tự gõ, có thể chứa dữ liệu của người thứ ba). Chính sách REFUND-v3/v4 chỉ cho hãng thấy order_id, parcel_id, district, delay_days (policies[].carrier_notice_fields).",
+    "pii_fields_blocked_to_third_party": [
+      "recipient_contact",
+      "recipient_name",
+      "recipient_phone",
+      "recipient_street",
+      "customer_note"
+    ],
+    "_ly_do_cause": "true: hãng bị trừ tiền theo số lỗi, nên chỉ được ghi lỗi khi tracking có delay_cause thuộc fault_causes của chính sách đang hiệu lực. Agent hiện tự gán cause='CARRIER' khi tracking trống nguyên nhân — đó là ghi oan cho bên thứ ba.",
+    "carrier_fault_requires_recorded_cause": true
+  }
+}

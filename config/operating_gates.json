@@ -7,7 +7,8 @@
     "_ly_do_budget": "1.500đ = ops_limits.max_llm_cost_per_ticket_vnd, trần đã thống nhất với Finance. Ticket đắt nhất của bộ nền chỉ tốn 670đ tiền LLM nên không làm hỏng ca đúng; ticket dài bất thường (chữ cài cắm, ghi chú lúc đặt hàng rất dài) bị chuyển người đọc.",
     "cost_budget_per_ticket_vnd": 1500,
     "_ly_do_scope": "Vòng 1 để all (100%): đo đủ 4 kho trước khi biết sự cố. Bộ nền: mọi kho đều rẻ hơn làm tay (HN 1.993đ, HCM 2.571đ, DN 4.586đ, CT 590đ/ticket). Thu hẹp theo kho là đòn bẩy ở vòng 2 nếu một kho vượt trần.",
-    "pilot_scope": {"mode": "all", "warehouses": [], "percent": 100},
+    "_ly_do_scope_v2": "VÒNG 2 · thẻ S5: kho sỉ HCM-B2B có đơn từ 2 triệu, luôn vượt auto_limit_vnd (200.000đ) nên ticket nào cũng bị chuyển người sau khi trợ lý đã đọc: mỗi ticket tốn tiền máy + 10.000đ công duyệt = 10.747đ > 10.000đ làm tay (R-S5-after-20261119-164753-6c74bd). Tự động hoá nhóm này không thể có lời nên để kho sỉ ở quy trình làm tay (NV-HANH điều phối) và chạy pilot ở 4 kho đơn lẻ HN, HCM, DN, CT (độ phủ 18/30 ticket/ngày = 0,6). Xem lại khi có hạn mức duyệt riêng cho đơn sỉ.",
+    "pilot_scope": {"mode": "warehouse", "warehouses": ["HN", "HCM", "DN", "CT"], "percent": 100},
     "_ly_do_roi": "0.4 = đúng roi_min đã ký trong config/acceptance_criteria.json (tương đương chi phí 7.000đ/ticket, tiết kiệm 30% so với làm tay 10.000đ). Không chặn gì, chỉ để report báo vượt trần.",
     "roi_min": 0.4
   },

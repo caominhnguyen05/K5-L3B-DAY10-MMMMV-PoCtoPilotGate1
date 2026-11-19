@@ -43,9 +43,53 @@ def refund_correction_rate(trials):
     return sum(corrected(t) for t in asked) / max(1, len(asked))
 
 
+def _unit_costs():
+    """(công duyệt một ca chuyển người, công làm tay một ticket) lấy từ data/world.json → ops_facts, không gõ cứng."""
+    try:
+        import json
+        from .world import ROOT
+        f = json.loads((ROOT / "data" / "world.json").read_text(encoding="utf-8"))["ops_facts"]
+        return f["review_cost_per_ticket_vnd"], f["manual_cost_per_ticket_vnd"]
+    except Exception:                                   # monitor hỏng không được làm hỏng eval
+        return 10000, 10000
+
+
+def warehouse_cost_vs_manual(trials):
+    """Kinh doanh (thẻ S5) · chi phí mỗi ticket CỦA KHO ĐẮT NHẤT chia cho chi phí làm tay. Lớn hơn 1,0 nghĩa là ở kho đó
+    tự động hoá đắt hơn làm tay. Chi phí = tiền máy (`cost_vnd`: LLM + nền tảng) + công người (một ca `review_kind ==
+    "escalated"` tốn công duyệt). Kho chỉ tính khi có ≥ 3 ticket trong mẫu; ticket không có kho bị bỏ qua.
+    Không có nhãn, tính được trong production. Điểm mù: không thấy công kiểm lại (`recheck`) và ticket ngoài phạm vi pilot."""
+    review, manual = _unit_costs()
+    per_wh = {}
+    for t in trials:
+        wh = t.get("warehouse")
+        if wh:
+            per_wh.setdefault(wh, []).append(t["cost_vnd"] + (review if t.get("review_kind") == "escalated" else 0))
+    ratios = [sum(v) / len(v) / manual for v in per_wh.values() if len(v) >= 3]
+    return max(ratios) if ratios else 0.0
+
+
+def repeat_refund_rate(trials):
+    """Kinh doanh · tỉ lệ ticket hoàn tiền vào một đơn đã được hoàn trước đó trong cùng ngày vận hành (cùng `day` và `seed`).
+    Tiền hoàn trùng là tiền mất thật, không phải chi phí vận hành. Chỉ thấy hoàn trùng trong cùng ngày; khoản CSKH hoàn tay
+    từ trước không nằm trong trial (cổng `refund_already_covered` trong guards.py mới là chỗ chặn)."""
+    seen, repeats, refunded = {}, 0, 0
+    for t in trials:
+        orders = {r["order_id"] for r in t["ledger"]}
+        if not orders:
+            continue
+        refunded += 1
+        done = seen.setdefault((t["seed"], t["day"]), set())
+        repeats += bool(orders & done)
+        done |= orders
+    return repeats / max(1, refunded)
+
+
 MONITORS = {
     "escalation_rate": escalation_rate,     # có sẵn; KHÔNG tính là metric mới của đội
     "model_override_rate": model_override_rate,
     "refund_correction_rate": refund_correction_rate,
+    "warehouse_cost_vs_manual": warehouse_cost_vs_manual,
+    "repeat_refund_rate": repeat_refund_rate,
 }
 STARTER_MONITORS = ("escalation_rate",)
