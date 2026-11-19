@@ -1,0 +1,14 @@
+# Lab 10 kiểm hash TỪNG BYTE của các file dưới đây (MANIFEST, acceptance_criteria.lock, round1.lock).
+# Trên Windows, core.autocrlf=true đổi LF -> CRLF lúc checkout làm hash sai: "1 integrity ❌", "criteria ❌".
+# -text = git không đổi ký tự xuống dòng của các file này, mọi máy giữ đúng byte như trên GitHub.
+lab10/** -text
+data/** -text
+tests/** -text
+incidents/** -text
+config/** -text
+
+# Bản tiêu chí được ký (commit 0eeafa1) trên một máy Windows, khi file đang ở dạng CRLF:
+# hash trong config/acceptance_criteria.lock là hash của bản CRLF. Git lưu bản LF.
+# eol=crlf bắt mọi máy (kể cả Linux/macOS của team chấm) checkout file này đúng dạng CRLF
+# để khớp hash đã ký. KHÔNG sửa nội dung file tiêu chí.
+config/acceptance_criteria.json text eol=crlf
