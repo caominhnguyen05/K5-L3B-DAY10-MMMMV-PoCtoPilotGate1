@@ -27,7 +27,7 @@
       "Có 1 khoản hoàn oan hoặc 1 lỗi ghi oan cho hãng ⇒ tắt ngay thao tác ghi tương ứng trong config/switches.json (issue_refund hoặc file_carrier_fault), giữ nguyên phần còn lại.",
       "Có 1 thông báo cho hãng chứa dữ liệu cá nhân (tên, số điện thoại, địa chỉ người nhận) ⇒ tắt notify_carrier, báo ngay trong 15 phút.",
       "Hàng chờ có ca chờ quá 60 phút hoặc từ 3 ca bị ùn trong một ca trực ⇒ gọi thêm 1 người duyệt; sau 30 phút vẫn ùn thì thu hẹp business.pilot_scope về kho HN.",
-      "ROI dưới 0.2 hoặc chi phí mỗi ticket vượt 10.000đ (làm tay) trong 2 ngày liên tiếp ⇒ dừng pilot, ghi bài học."
+      "ROI dưới 0.4 hoặc chi phí mỗi ticket vượt 7.000đ (ngưỡng đã ký trong config/acceptance_criteria.json) trong 2 ngày liên tiếp ⇒ thu hẹp business.pilot_scope, cắt kho có chi phí cao nhất (khối 'theo kho và hãng'); nếu sau khi thu hẹp chi phí mỗi ticket vẫn vượt 10.000đ (làm tay, ROI dưới 0) ⇒ dừng pilot, ghi bài học (khớp stop_condition và decision_rule 'Dừng' đã ký)."
     ],
     "_ly_do_alert": "Kênh có người thật trực: Zalo nhóm Ops-Oncall. Tín hiệu đỏ phải tới được NV-TUNG (người bấm công tắc) và NV-OANH (người đối soát với hãng) trong cùng một phút.",
     "alert_channel": "Zalo nhóm Ops-Oncall LogiX-VN (NV-TUNG, NV-OANH, NV-HANH)",

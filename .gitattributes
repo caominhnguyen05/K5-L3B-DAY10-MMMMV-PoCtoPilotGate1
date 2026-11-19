@@ -6,6 +6,8 @@ data/** -text
 tests/** -text
 incidents/** -text
 config/** -text
+# Bài nộp: manifest.json ghi hash từng file trong submission/, lệnh 7 so bản chép tiêu chí với hash đã ký.
+submission/** -text
 
 # Bản tiêu chí được ký (commit 0eeafa1) trên một máy Windows, khi file đang ở dạng CRLF:
 # hash trong config/acceptance_criteria.lock là hash của bản CRLF. Git lưu bản LF.
