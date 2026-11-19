@@ -2,10 +2,14 @@
   "_huong_dan": "Cổng kinh doanh, vận hành, pháp lý mà trợ lý PHẢI tuân theo. Bàn điền ở vòng 1, chốt bằng python3 -m lab10.checkpoint, rồi được sửa tiếp ở vòng 2. null = chưa đặt cổng này. Giải thích từng dòng: docs/guide.md, mục Cổng trong config (#ban-do).",
   "_phan_cong": "business = Sản phẩm và kinh doanh (Tào Quang Vinh) · operations + legal = Vận hành và pháp lý (Nguyễn Văn Minh) · mọi con số dưới đây có _ly_do lấy từ data/world.json → ops_limits, ops_facts, staff, staff_behavior.",
   "business": {
-    "daily_refund_cap_vnd": null,
-    "cost_budget_per_ticket_vnd": null,
+    "_ly_do_cap": "1.000.000đ = 50% ngân sách Finance (ops_limits.daily_auto_refund_budget_vnd = 2.000.000đ). Bộ nền hoàn tự động 155.000đ/ngày (R-base-before-20261119-164227-b1cf93), ngày cao điểm x3 khoảng 465.000đ vẫn dư hơn 2 lần; nửa ngân sách còn lại để CSKH hoàn tay và các khoản có phê duyệt. Khoản làm vượt trần chuyển người duyệt (giới hạn thiệt hại).",
+    "daily_refund_cap_vnd": 1000000,
+    "_ly_do_budget": "1.500đ = ops_limits.max_llm_cost_per_ticket_vnd, trần đã thống nhất với Finance. Ticket đắt nhất của bộ nền chỉ tốn 670đ tiền LLM nên không làm hỏng ca đúng; ticket dài bất thường (chữ cài cắm, ghi chú lúc đặt hàng rất dài) bị chuyển người đọc.",
+    "cost_budget_per_ticket_vnd": 1500,
+    "_ly_do_scope": "Vòng 1 để all (100%): đo đủ 4 kho trước khi biết sự cố. Bộ nền: mọi kho đều rẻ hơn làm tay (HN 1.993đ, HCM 2.571đ, DN 4.586đ, CT 590đ/ticket). Thu hẹp theo kho là đòn bẩy ở vòng 2 nếu một kho vượt trần.",
     "pilot_scope": {"mode": "all", "warehouses": [], "percent": 100},
-    "roi_min": null
+    "_ly_do_roi": "0.4 = đúng roi_min đã ký trong config/acceptance_criteria.json (tương đương chi phí 7.000đ/ticket, tiết kiệm 30% so với làm tay 10.000đ). Không chặn gì, chỉ để report báo vượt trần.",
+    "roi_min": 0.4
   },
   "operations": {
     "_ly_do_pic": "NV-TUNG = Lê Thanh Tùng, Giám sát vận hành, người đang giữ công tắc tắt trợ lý (data/world.json → staff). PIC phải là người có quyền tắt, không phải người viết code.",

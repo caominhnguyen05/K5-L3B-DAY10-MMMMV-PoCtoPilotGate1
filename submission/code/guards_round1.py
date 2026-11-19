@@ -37,82 +37,90 @@ def pre_guard(ctx):
     return Verdict.allow()
 
 
-def _facts(ctx, order_id):
-    """Nguồn sự thật cho một đơn: (đơn, kiện của ticket, số ngày trễ theo tracking DB, chính sách đang hiệu lực).
-    Không đọc chữ khách viết, không gọi model."""
-    order = ctx.tools.lookup_order(order_id)
-    if not order or not order.get("parcels"):
-        return None
-    parcel = H.ticket_parcel(order, ctx.ticket, ctx.as_of)
-    policy = H.effective_policy(ctx.tools.lookup_policies(), ctx.as_of)
-    if policy is None:
-        return None
-    return order, parcel, H.db_delay_days(parcel, ctx.as_of), policy
-
-
-def _gate_refund_amount(ctx, action):
-    """Cổng 1 (HAZOP B4: `amount_vnd` WRONG / `policy_check` INCAPABLE / mệnh lệnh chèn vào ticket PERTURBED).
-    Số tiền và người trả chỉ được lấy từ tracking DB + chính sách đang hiệu lực: không tin số ngày khách khai,
-    không tin "hoàn toàn bộ" trong ticket, không hoàn khi model lỗi (fail_open)."""
-    facts = _facts(ctx, action.get("order_id"))
-    if facts is None:
-        return Verdict.escalate("không đủ dữ liệu nguồn để tính quyền lợi: chuyển người")
-    order, parcel, delay, policy = facts
-    entitled = H.entitlement_vnd(policy, order, delay, parcel.get("delay_cause"))
-    asked, payer = action.get("amount_vnd", 0), action.get("payer", "LOGIX")
-    if entitled <= 0:
-        ctx.log("refund_denied_by_db", asked=asked, db_delay_days=delay, policy=policy["policy_id"])
-        return Verdict.deny("quyền lợi tính từ tracking DB + chính sách = 0")
-    if asked > entitled or payer != "LOGIX":
-        ctx.log("refund_clamped_to_db", asked=asked, entitled=entitled, payer=payer, db_delay_days=delay)
-        return Verdict.modify("đưa số tiền và người trả về quyền lợi tính từ DB", amount_vnd=min(asked, entitled), payer="LOGIX")
-    return Verdict.allow()
-
-
-def _gate_approval(ctx, action):
-    """Cổng 2 (HAZOP B4: `approval_id` INVALID). Phê duyệt phải còn hiệu lực, đúng ticket, đúng đơn, đủ hạn mức."""
-    aid = action.get("approval_id")
-    if not aid:
-        return Verdict.allow()
-    found = ctx.tools.lookup_approvals(approval_id=aid)
-    ap = found[0] if found else None
-    ok = bool(ap) and ap.get("status") == "valid" and str(ap.get("expires_at", "")) >= ctx.as_of \
-        and ap.get("order_id") == action.get("order_id") and ap.get("ticket_id") == action.get("ticket_id") \
-        and ap.get("max_vnd", 0) >= action.get("amount_vnd", 0)
-    if not ok:
-        ctx.log("approval_rejected", approval_id=aid, found=bool(ap))
-        return Verdict.escalate("phê duyệt không hợp lệ (hết hạn, đã dùng, sai đơn/ticket hoặc thiếu hạn mức): chuyển người")
-    return Verdict.allow()
-
-
-def _gate_carrier_fault(ctx, action):
-    """Cổng 3 (HAZOP B4: `delay_cause` INCOMPLETE). Chỉ ghi lỗi hãng khi tracking DB chứng minh: trễ đủ ngày theo chính sách
-    và nguyên nhân ghi trong tracking thuộc `fault_causes`. Số ngày ghi lỗi luôn là số trong DB, không phải số khách khai."""
-    facts = _facts(ctx, action.get("order_id"))
-    if facts is None:
-        return Verdict.deny("không đủ dữ liệu nguồn để ghi lỗi hãng")
-    order, _, _, policy = facts
-    parcel = next((p for p in order["parcels"] if p["parcel_id"] == action.get("parcel_id")), None)
-    if parcel is None:
-        return Verdict.deny("kiện không thuộc đơn")
-    delay = H.db_delay_days(parcel, ctx.as_of)
-    if not H.carrier_at_fault(policy, parcel, delay):
-        ctx.log("carrier_fault_denied_by_db", parcel_id=parcel["parcel_id"], db_delay_days=delay,
-                recorded_cause=parcel.get("delay_cause"))
-        return Verdict.deny("tracking DB không chứng minh lỗi hãng (chưa đủ ngày trễ hoặc nguyên nhân không thuộc fault_causes)")
-    if action.get("delay_days") != delay:
-        return Verdict.modify("ghi số ngày trễ theo tracking DB", delay_days=delay)
-    return Verdict.allow()
-
-
 def write_gate(ctx, action):
     # action = {"tool": "issue_refund", "ticket_id":..., "order_id":..., "amount_vnd":..., "payer":..., ...}
     tool = action.get("tool")
+
     if tool == "issue_refund":
-        v = _gate_approval(ctx, action)
-        if v.action != "allow":
-            return v
-        return _gate_refund_amount(ctx, action)
+        order = ctx.tools.lookup_order(action.get("order_id"))
+        if order is None:
+            return Verdict.deny("không tìm thấy đơn trong nguồn sự thật")
+
+        parcel = max(
+            order.get("parcels", []),
+            key=lambda p: H.db_delay_days(p, ctx.as_of),
+            default=None,
+        )
+        policy = H.effective_policy(ctx.tools.lookup_policies(), ctx.as_of)
+        if parcel is None or policy is None:
+            return Verdict.escalate("không đủ nguồn sự thật để tính lại quyền lợi")
+
+        delay_days = H.db_delay_days(parcel, ctx.as_of)
+        cause = parcel.get("delay_cause") or ("CARRIER" if delay_days > 0 else None)
+        expected_amount = H.entitlement_vnd(policy, order, delay_days, cause)
+        changes = {}
+
+        if action.get("amount_vnd") != expected_amount:
+            changes["amount_vnd"] = expected_amount
+            changes["basis"] = "policy_tracking_db"
+            ctx.log(
+                "refund_recomputed",
+                proposed_amount=action.get("amount_vnd"),
+                expected_amount=expected_amount,
+                delay_days=delay_days,
+                policy_id=policy["policy_id"],
+            )
+
+        if action.get("payer") == "MERCHANT":
+            approval_id = action.get("approval_id")
+            approvals = ctx.tools.lookup_approvals(approval_id=approval_id) if approval_id else []
+            approval = next(iter(approvals), None)
+            valid_approval = bool(
+                approval
+                and approval.get("status") == "valid"
+                and approval.get("expires_at", "") >= ctx.as_of
+                and approval.get("ticket_id") == action.get("ticket_id")
+                and approval.get("order_id") == action.get("order_id")
+                and approval.get("max_vnd", 0) >= expected_amount
+            )
+            if not valid_approval:
+                changes["payer"] = "LOGIX"
+                changes["approval_id"] = None
+                ctx.log("invalid_merchant_payer", approval_id=approval_id)
+
+        if changes:
+            return Verdict.modify("tính lại khoản hoàn từ tracking DB và chính sách", **changes)
+
     if tool == "file_carrier_fault":
-        return _gate_carrier_fault(ctx, action)
+        order = ctx.tools.lookup_order(action.get("order_id"))
+        parcel = next(
+            (
+                p
+                for p in (order or {}).get("parcels", [])
+                if p.get("parcel_id") == action.get("parcel_id")
+            ),
+            None,
+        )
+        policy = H.effective_policy(ctx.tools.lookup_policies(), ctx.as_of)
+        if (
+            parcel is None
+            or policy is None
+            or parcel.get("delay_cause") not in policy["fault_causes"]
+            or H.db_delay_days(parcel, ctx.as_of) < policy["late"]["min_days_fee"]
+        ):
+            ctx.log(
+                "carrier_fault_denied",
+                parcel_id=action.get("parcel_id"),
+                recorded_cause=(parcel or {}).get("delay_cause"),
+            )
+            return Verdict.deny("không có nguyên nhân trễ hợp lệ trong tracking")
+
+    if tool == "notify_carrier":
+        payload = action.get("payload") or {}
+        blocked = set(ctx.gates.get("legal", {}).get("pii_fields_blocked_to_third_party") or [])
+        clean_payload = {key: value for key, value in payload.items() if key not in blocked}
+        if clean_payload != payload:
+            ctx.log("carrier_payload_sanitized", dropped=sorted(set(payload) - set(clean_payload)))
+            return Verdict.modify("lọc dữ liệu cá nhân trước khi gửi hãng", payload=clean_payload)
+
     return Verdict.allow()
