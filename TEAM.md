@@ -43,7 +43,7 @@ Vai **Vận hành và pháp lý**. Phụ trách: câu 1.2 và câu 1.4 (cột te
 
 - Cấu hình: `config/operating_gates.json` — `operations` (8 khoá + 4 stop_conditions), `legal` (2 khoá). Kiểm bằng `python3 -m lab10.checkpoint`: `ops.problems(cfg)` trả về danh sách rỗng.
 - Phiếu: `templates/form-a-criteria.md` (câu 1.2, cột telemetry câu 1.4), `templates/form-b-evaluation-gates.md` (B4, B5, B7.5, B7.6).
-- Mã commit và mã lần chạy (`runs/<mã>`) sẽ cập nhật sau khi bàn ký tiêu chí và chạy `lab10.eval` / `lab10.grade`; hiện chưa ký nên chưa có mã lần chạy nào.
+- Tiêu chí ký ở commit `0eeafa1` (hash `517b590f`, ký lúc 15:50:49, lần đo đầu tiên 16:42). Tự kiểm tra cuối của bàn: `R-S5-grade-20261119-172442-d6863e` (`PASS-VISIBLE`; mốc prepared dùng `operating_gates.round1.json` có mục `operations` và `legal` ở trên). Vòng 2: HAZOP của thẻ (C4), risk register (C10), checklist cập nhật và Runbook 4–5 (C11) ở `templates/form-c-incident.md`.
 
 ### Exit ticket
 
@@ -75,3 +75,33 @@ Vai **Sản phẩm và kinh doanh**. Phụ trách: câu 1.1, 1.5 (cùng bàn) v�
 
 - **Học được:** một con số trung bình đẹp có thể giấu một phân khúc lỗ. Trung bình thẻ S5 chỉ 6.083đ/ticket (dưới làm tay), nhưng riêng kho sỉ là 11.326đ/ticket, và chính kho đó kéo ROI xuống âm. Ngưỡng kinh doanh phải đọc theo kho và hãng, và "Thu hẹp" là một quyết định có giá trị khi nó nói rõ cắt phần nào, còn bao nhiêu, ticket bị cắt đi đâu.
 - **Còn chưa chắc:** ngưỡng 7.000đ/ticket và ROI 0,4 đặt cho lượng 22 ticket/ngày với 1 người trực; khi REFUND-v4 hạ hạn mức tự động xuống 100.000đ thì tỉ lệ chuyển người ở kho đơn lẻ sẽ tăng bao nhiêu, và kho nào sẽ chạm 7.000đ trước, mock hiện chưa đo được.
+
+## TranDinhNhatMinh-2A202604083
+
+*Ghi chú: mục này được soạn nháp thay (Tào Quang Vinh, có dùng trợ lý AI) từ lịch sử commit và `git blame` của Trần Đình Nhật Minh (commit `e7aa2f9`, `7d3e0fe`, `05f5e90`, `d803a60`); Nhật Minh đọc lại, sửa cho đúng việc mình làm và viết lại Exit ticket bằng lời của mình.*
+
+### Phần việc phụ trách
+
+Vai **Kỹ sư cổng 2**. Phụ trách: câu 1.3 (offline metric cho bước ghi lỗi hãng, Phiếu A mục A2) · câu 2.1–2.2 (lần chạy base, bảng soát lỗi `T-002@55`, Phiếu B mục B0–B2) · câu 2.6–2.8 (code cổng vòng 1 trong `lab10/guards.py`, hai bước tránh rò rỉ dữ liệu, behavioral test, B7.1–B7.3) · vòng 2 (thẻ S5): dò trace, sửa `guards.py`, viết chỉ số theo dõi trong `lab10/monitors.py`, bảng soát lỗi, fault tree trước và sau khi sửa (C0–C2, C6, C8, C9).
+
+### Đóng góp cụ thể
+
+- **Cổng vòng 1** (`lab10/guards.py`, `write_gate`), mỗi cổng ứng với một dòng HAZOP B4: `_gate_refund_amount` (số tiền và người trả chỉ lấy từ tracking DB + chính sách đang hiệu lực, không tin số ngày khách khai, không hoàn khi model lỗi `fail_open`); `_gate_approval` (phê duyệt phải còn hạn, đúng ticket, đúng đơn, đủ hạn mức: chặn kiểu `A-0031`); `_gate_carrier_fault` (chỉ ghi lỗi hãng khi trễ ≥ `min_days_fee` và `delay_cause` thuộc `fault_causes`). Kết quả bộ nền: `T-002@55` hết hỏng, hoàn sai 20.000đ → 0, lỗi hãng oan 1 → 0, không ca nào hỏng thêm.
+- **Cổng vòng 2 cho thẻ S5**: `_gate_refund_amount` đọc **sổ cái** của đơn (`remaining = quyền lợi − Σ sổ cái`, gồm cả khoản CSKH hoàn tay) để chặn hoàn trùng; một kiện chỉ bị ghi lỗi hãng một lần; `send_reply` nói đúng "đơn đã được hoàn X đ trước đó"; `pre_guard` + `_read_char_cap` cắt phần văn bản dán dài theo trần tiền LLM tính từ `ops_facts` (không gõ cứng). Kết quả S5: hoàn sai 890.000đ → 0, lỗi hãng oan 20 → 0, tiền LLM lớn nhất 2.412đ → 1.149đ.
+- **Chỉ số theo dõi** (`lab10/monitors.py`, 4 chỉ số mới): `model_override_rate`, `refund_correction_rate`, `warehouse_cost_vs_manual` (chi phí kho đắt nhất / làm tay, đọc đơn giá từ `ops_facts`), `repeat_refund_rate`; cả bốn "sáng đèn" giữa bộ nền và thẻ (`6 monitor ✅`).
+- **Phiếu**: offline metric câu 1.3 (độ chính xác và độ phủ của bước ghi lỗi hãng, nhãn `label.faults`); B1–B2 (lần chạy base, bảng soát lỗi `T-002@55`: lỗi chìm, nguồn là đầu vào); B7.1–B7.3 (bảng 3 cổng, hai bước tránh rò rỉ dữ liệu, behavioral test với 2 ticket hiểm `O-1004` khai quá số ngày và `O-1021` chèn mệnh lệnh); C0, C2, C6, C8, C9 (nhật ký lần chạy, bảng soát lỗi của thẻ, fault tree trước/sau, bảng chỉ số theo dõi).
+- Có chạy `lab10.checkpoint` lúc 16:45 trên máy của mình; bàn cũng chốt trên máy trưởng nhóm lúc 17:02 và giữ bản đó (`639236c2`) vì khớp B8. Hai bản chốt cho cùng kết quả trên bộ nền.
+- **Có dùng trợ lý AI** để đọc code agent, gợi ý cách viết cổng và soát câu chữ phiếu; không có cổng nào xử lý riêng theo mã ticket hay câu chữ cụ thể.
+
+### Bằng chứng
+
+- Code: `lab10/guards.py` (`pre_guard`, `_read_char_cap`, `_facts`, `_gate_refund_amount`, `_gate_approval`, `_gate_carrier_fault`, `write_gate`), `lab10/monitors.py` (4 hàm, đăng ký trong `MONITORS`).
+- Mã lần chạy: `R-base-before-20261119-164213-b1cf93` (base), `R-base-after-20261119-164244-57dcbc` (cổng vòng 1), `R-S5-after-20261119-164736-c71600` (cổng sổ cái), `R-S5-after-20261119-164753-6c74bd` (cắt văn bản dài); tự kiểm tra cuối của bàn `R-S5-grade-20261119-172442-d6863e` (`PASS-VISIBLE`, regression và monitor ✅).
+- Phiếu: `templates/form-a-criteria.md` (A2 cột Offline), `templates/form-b-evaluation-gates.md` (B0–B2, B7.1–B7.3), `templates/form-c-incident.md` (C0, C2, C6, C8, C9).
+
+### Exit ticket
+
+*(Nháp, Nhật Minh viết lại bằng lời của mình.)*
+
+- **Học được:** cổng vòng 1 tính đúng quyền lợi **của một ticket** vẫn không đủ: ở S5 mỗi khoản hoàn trùng nhìn riêng đều "hợp lệ", chỉ sai khi cộng với sổ cái của cả đơn. Cổng phải đọc đúng nguồn sự thật (sổ cái), không phải bản sao (`refund_status`).
+- **Còn chưa chắc:** cổng sổ cái giả định các lệnh ghi chạy tuần tự; nếu hai ticket cùng đơn được xử lý song song thì cả hai có thể cùng thấy "còn quyền lợi". Chưa kiểm được trường hợp này trong mô phỏng của lab.
