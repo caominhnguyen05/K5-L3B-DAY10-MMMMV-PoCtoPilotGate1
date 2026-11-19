@@ -24,8 +24,8 @@ rồi mới chạy đánh giá. Khối 1 không sửa code.
 
 ### Câu 1.2 · Mục tiêu nhìn từ hai người
 
-- Chị Oanh, kế toán đối soát (không dùng trợ lý, nhưng phải khớp sổ với hãng và shop mỗi tuần): …
-- Chị Hạnh, trưởng ca CSKH (phải duyệt những ca trợ lý chuyển sang): …
+- Chị Oanh, kế toán đối soát (không dùng trợ lý, nhưng phải khớp sổ với hãng và shop mỗi tuần): **chốt tuần không phải sửa tay dòng nào** — mỗi dòng sổ cái có đúng một căn cứ (chính sách đang hiệu lực hoặc mã phê duyệt còn hạn), đúng người trả (LOGIX hay MERCHANT), và khớp số lỗi đã báo cho hãng với sao kê hãng gửi về.
+- Chị Hạnh, trưởng ca CSKH (phải duyệt những ca trợ lý chuyển sang): **không ca nào trong hàng chờ vượt 60 phút** (hạn đã thống nhất với Ops) và mỗi ca chuyển sang phải đủ dữ kiện để chị quyết trong ≤ 10 phút — tức 6 ca/giờ/người — mà không phải mở lại ticket trợ lý đã tự quyết.
 
 ---
 
@@ -48,12 +48,12 @@ trợ lý có đang gây thiệt hại cho bên ngoài LogiX không; không có 
 
 | | Offline, cho MỘT bước (câu 1.3) | Telemetry production (câu 1.4) |
 |---|---|---|
-| **Bước / hành vi được đo** | | |
-| **Thước đo** (một câu, có đơn vị) | | |
-| **Dữ liệu** (lấy ở đâu, bao nhiêu, ai gán nhãn) | | |
-| **Cách tính** (công thức, mẫu số, cách xử lý ca thiếu dữ liệu) | | |
-| **Khung thời gian / ngưỡng báo động** | (không áp dụng) | |
-| **Điểm mù** (thước đo này KHÔNG thấy gì) | | |
+| **Bước / hành vi được đo** | *(Kỹ sư cổng điền — câu 1.3)* | **Lệnh ghi ra ngoài LogiX**: `notify_carrier` (thông báo cho hãng) và `file_carrier_fault` (ghi lỗi hãng) |
+| **Thước đo** (một câu, có đơn vị) | | **Số thông báo/lệnh ghi gửi bên thứ ba có dữ liệu cá nhân hoặc ghi lỗi oan, trên 1.000 thông báo** (đơn vị: ca/1.000, làm tròn 1 chữ số thập phân) |
+| **Dữ liệu** (lấy ở đâu, bao nhiêu, ai gán nhãn) | | Không có nhãn. Lấy nguyên **log lệnh ghi** của production (`world.outbound`, `world.faults`, `world.ledger` — trong lab là `run.outbound`/`run.fault_rows`): mỗi thông báo kèm payload, mã đơn, mã kiện. "Đúng/sai" không do người gán mà suy từ **config**: trường nằm trong `legal.pii_fields_blocked_to_third_party` là lộ; `parcel.delay_cause` không thuộc `fault_causes` của chính sách đang hiệu lực là ghi oan. |
+| **Cách tính** (công thức, mẫu số, cách xử lý ca thiếu dữ liệu) | | `hits = (#notify_carrier có payload chứa tên/SĐT/địa chỉ người nhận, hoặc có trường customer_note) + (#fault_rows có delay_cause ngoài fault_causes, hoặc delay < min_days_fee)`; `rate = hits / max(1, #thông báo cho hãng) × 1000`. Cửa sổ trượt 30 phút. Thông báo không có `order_id` (không tra được người nhận) **bị loại khỏi mẫu số và đếm riêng** ở cột `unresolved` — không coi là 0. |
+| **Khung thời gian / ngưỡng báo động** | (không áp dụng) | Tính mỗi **5 phút**, so trên cửa sổ 30 phút: **VÀNG** ≥ 1 ca/1.000 → NV-OANH kiểm 10 thông báo gần nhất trong 30 phút; **ĐỎ** ≥ 1 ca trong 5 phút → NV-TUNG tắt ngay `notify_carrier`/`file_carrier_fault` (config/switches.json). |
+| **Điểm mù** (thước đo này KHÔNG thấy gì) | | Không thấy dữ liệu **đã rời hệ thống trước khi bật cổng** (không thu hồi được); không thấy thiệt hại không để lại dấu (khách/hãng không khiếu nại, ví dụ hoàn thiếu tiền); không thấy lỗi oan khi chính `delay_cause` trong tracking bị nhập sai — lúc đó phải đối chiếu sao kê hãng ở khâu của chị Oanh. |
 
 **Ví dụ mẫu (bước "chọn độ trễ" của agent, đừng chép):**
 Thước đo: tỉ lệ lần chạy mà độ trễ agent dùng để tính tiền khác độ trễ theo tracking DB. Dữ liệu: sự kiện `proposal.delay_days_used`
