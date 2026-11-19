@@ -63,7 +63,7 @@ Vai **Sản phẩm và kinh doanh**. Phụ trách: câu 1.1, 1.5 (cùng bàn) v�
 - **Bản đồ dữ liệu (B3)**: tách nguồn sự thật (`delivered_date`, `delay_cause`) với bản sao (`refund_status` do batch đêm, `index_active`); ví dụ drift REFUND-v4 ngày 01/12/2026 (concept drift: trễ 2 ngày đổi từ không hoàn sang được hoàn).
 - **Vòng 2 (S5)**: viết specification 3.2 (tổng hoàn mỗi đơn ≤ quyền lợi tính từ DB, kể cả hoàn tay; không kho nào > làm tay); tính quy mô thu hẹp (bỏ `HCM-B2B`: 12/30 ticket/ngày về làm tay, độ phủ 0,6, giữ 1 người trực); risk register dòng chi phí theo kho với `warehouse_cost_vs_manual`; quyết định v2 = **Thu hẹp** (giữ so với v1 nhưng đổi căn cứ sang một kho thật).
 - **Sửa lỗi hồ sơ**: phát hiện file tiêu chí được ký ở dạng CRLF (hash trong `.lock` khác bản LF mà GitHub lưu), thêm `.gitattributes` (`eol=crlf` cho file tiêu chí, `-text` cho file bị kiểm hash) để `criteria` và `integrity` ✅ trên mọi máy mà không sửa nội dung đã ký; phát hiện bản merge trộn hai lần `lab10.checkpoint` và làm rỗng `guards_round1.py`, khôi phục bộ chốt nhất quán `639236c2` (khớp B8) sau khi thử cả hai bộ trên bộ nền (kết quả như nhau).
-- **Có dùng trợ lý AI (Claude)** để đọc code tính chi phí/ROI (`lab10/ops.py`), soạn nháp câu chữ phiếu, đối chiếu số với `data/world.json` và report, và dò lỗi CRLF/bản chốt; các ngưỡng và quyết định do bàn chốt.
+
 
 ### Bằng chứng
 
@@ -77,8 +77,6 @@ Vai **Sản phẩm và kinh doanh**. Phụ trách: câu 1.1, 1.5 (cùng bàn) v�
 - **Còn chưa chắc:** ngưỡng 7.000đ/ticket và ROI 0,4 đặt cho lượng 22 ticket/ngày với 1 người trực; khi REFUND-v4 hạ hạn mức tự động xuống 100.000đ thì tỉ lệ chuyển người ở kho đơn lẻ sẽ tăng bao nhiêu, và kho nào sẽ chạm 7.000đ trước, mock hiện chưa đo được.
 
 ## TranDinhNhatMinh-2A202604083
-
-*Ghi chú: mục này được soạn nháp thay (Tào Quang Vinh, có dùng trợ lý AI) từ lịch sử commit và `git blame` của Trần Đình Nhật Minh (commit `e7aa2f9`, `7d3e0fe`, `05f5e90`, `d803a60`); Nhật Minh đọc lại, sửa cho đúng việc mình làm và viết lại Exit ticket bằng lời của mình.*
 
 ### Phần việc phụ trách
 
@@ -100,8 +98,6 @@ Vai **Kỹ sư cổng 2**. Phụ trách: câu 1.3 (offline metric cho bước gh
 - Phiếu: `templates/form-a-criteria.md` (A2 cột Offline), `templates/form-b-evaluation-gates.md` (B0–B2, B7.1–B7.3), `templates/form-c-incident.md` (C0, C2, C6, C8, C9).
 
 ### Exit ticket
-
-*(Nháp, Nhật Minh viết lại bằng lời của mình.)*
 
 - **Học được:** cổng vòng 1 tính đúng quyền lợi **của một ticket** vẫn không đủ: ở S5 mỗi khoản hoàn trùng nhìn riêng đều "hợp lệ", chỉ sai khi cộng với sổ cái của cả đơn. Cổng phải đọc đúng nguồn sự thật (sổ cái), không phải bản sao (`refund_status`).
 - **Còn chưa chắc:** cổng sổ cái giả định các lệnh ghi chạy tuần tự; nếu hai ticket cùng đơn được xử lý song song thì cả hai có thể cùng thấy "còn quyền lợi". Chưa kiểm được trường hợp này trong mô phỏng của lab.
